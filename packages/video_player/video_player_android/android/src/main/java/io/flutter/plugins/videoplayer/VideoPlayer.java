@@ -79,9 +79,16 @@ final class VideoPlayer {
     ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
     Uri uri = Uri.parse(dataSource);
 
-    buildHttpDataSourceFactory(httpHeaders);
-    DataSource.Factory dataSourceFactory =
-        new DefaultDataSource.Factory(context, httpDataSourceFactory);
+    CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
+        context,
+        512 * 1024 * 1024, // 512MB
+        10 * 1024 * 1024 // 10MB
+    );
+    if (!httpHeaders.isEmpty()) {
+      cacheDataSourceFactory.getHttpDataSourceFactory()
+          .setDefaultRequestProperties(httpHeaders);
+    }
+    DataSource.Factory dataSourceFactory = cacheDataSourceFactory;
 
     MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint);
 
