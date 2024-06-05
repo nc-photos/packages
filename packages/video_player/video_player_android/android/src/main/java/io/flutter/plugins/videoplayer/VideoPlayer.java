@@ -4,14 +4,10 @@
 
 package io.flutter.plugins.videoplayer;
 
-import static com.google.android.exoplayer2.Player.REPEAT_MODE_ALL;
-import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
-
 import android.content.Context;
 import android.net.Uri;
 import android.view.Surface;
-import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Format;
@@ -29,16 +25,22 @@ import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.util.Util;
-import io.flutter.plugin.common.EventChannel;
-import io.flutter.view.TextureRegistry;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
+import io.flutter.plugin.common.EventChannel;
+import io.flutter.view.TextureRegistry;
+
+import static com.google.android.exoplayer2.Player.REPEAT_MODE_ALL;
+import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
 
 final class VideoPlayer {
   private static final String FORMAT_SS = "ss";
@@ -71,7 +73,8 @@ final class VideoPlayer {
       String dataSource,
       String formatHint,
       @NonNull Map<String, String> httpHeaders,
-      VideoPlayerOptions options) {
+      VideoPlayerOptions options,
+      Messages.MessageLivePhotoType livePhotoType) {
     this.eventChannel = eventChannel;
     this.textureEntry = textureEntry;
     this.options = options;
@@ -79,16 +82,17 @@ final class VideoPlayer {
     ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
     Uri uri = Uri.parse(dataSource);
 
-    CacheDataSourceFactory cacheDataSourceFactory = new CacheDataSourceFactory(
+    AppDataSourceFactory appDataSourceFactory = new AppDataSourceFactory(
         context,
         512 * 1024 * 1024, // 512MB
-        10 * 1024 * 1024 // 10MB
+        10 * 1024 * 1024, // 10MB
+        livePhotoType
     );
     if (!httpHeaders.isEmpty()) {
-      cacheDataSourceFactory.getHttpDataSourceFactory()
+      appDataSourceFactory.getHttpDataSourceFactory()
           .setDefaultRequestProperties(httpHeaders);
     }
-    DataSource.Factory dataSourceFactory = cacheDataSourceFactory;
+    DataSource.Factory dataSourceFactory = appDataSourceFactory;
 
     MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint);
 

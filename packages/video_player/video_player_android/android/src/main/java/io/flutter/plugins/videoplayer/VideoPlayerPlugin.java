@@ -5,8 +5,11 @@
 package io.flutter.plugins.videoplayer;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.LongSparseArray;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import androidx.annotation.NonNull;
 import io.flutter.FlutterInjector;
 import io.flutter.Log;
@@ -22,11 +25,6 @@ import io.flutter.plugins.videoplayer.Messages.PositionMessage;
 import io.flutter.plugins.videoplayer.Messages.TextureMessage;
 import io.flutter.plugins.videoplayer.Messages.VolumeMessage;
 import io.flutter.view.TextureRegistry;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import javax.net.ssl.HttpsURLConnection;
 
 /** Android platform implementation of the VideoPlayerPlugin. */
 public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
@@ -142,7 +140,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
               "asset:///" + assetLookupKey,
               null,
               new HashMap<>(),
-              options);
+              options,
+              arg.getLivePhotoType());
     } else {
       Map<String, String> httpHeaders = arg.getHttpHeaders();
       player =
@@ -153,7 +152,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
               arg.getUri(),
               arg.getFormatHint(),
               httpHeaders,
-              options);
+              options,
+              arg.getLivePhotoType());
     }
     videoPlayers.put(handle.id(), player);
 

@@ -37,6 +37,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
     String? uri;
     String? formatHint;
     Map<String, String> httpHeaders = <String, String>{};
+    LivePhotoType? livePhotoType;
     switch (dataSource.sourceType) {
       case DataSourceType.asset:
         asset = dataSource.asset;
@@ -45,6 +46,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
         uri = dataSource.uri;
         formatHint = _videoFormatStringMap[dataSource.formatHint];
         httpHeaders = dataSource.httpHeaders;
+        livePhotoType = dataSource.livePhotoType;
       case DataSourceType.file:
         uri = dataSource.uri;
         httpHeaders = dataSource.httpHeaders;
@@ -57,6 +59,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
       uri: uri,
       httpHeaders: httpHeaders,
       formatHint: formatHint,
+      livePhotoType: livePhotoType?.toMessageType(),
     );
 
     final TextureMessage response = await _api.create(message);
@@ -184,5 +187,18 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
       Duration(milliseconds: pair[0] as int),
       Duration(milliseconds: pair[1] as int),
     );
+  }
+}
+
+extension on LivePhotoType {
+  MessageLivePhotoType toMessageType() {
+    switch (this) {
+      case LivePhotoType.googleMvimg:
+        return MessageLivePhotoType.googleMvimg;
+      case LivePhotoType.googleMp:
+        return MessageLivePhotoType.googleMp;
+      case LivePhotoType.samsung:
+        return MessageLivePhotoType.samsung;
+    }
   }
 }
