@@ -6,6 +6,7 @@ package io.flutter.plugins.videoplayer;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 import android.view.Surface;
 
 import com.google.android.exoplayer2.C;
@@ -16,6 +17,7 @@ import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Player.Listener;
+import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -24,6 +26,8 @@ import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverride;
+import com.google.android.exoplayer2.trackselection.TrackSelectionParameters;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.util.Util;
@@ -35,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -99,7 +104,7 @@ final class VideoPlayer {
     exoPlayer.setMediaSource(mediaSource);
     exoPlayer.prepare();
 
-    setUpVideoPlayer(exoPlayer, new QueuingEventSink());
+    setUpVideoPlayer(exoPlayer, new QueuingEventSink(), livePhotoType);
   }
 
   // Constructor used to directly test members of this class.
@@ -116,7 +121,7 @@ final class VideoPlayer {
     this.options = options;
     this.httpDataSourceFactory = httpDataSourceFactory;
 
-    setUpVideoPlayer(exoPlayer, eventSink);
+    setUpVideoPlayer(exoPlayer, eventSink, null);
   }
 
   @VisibleForTesting
@@ -180,7 +185,10 @@ final class VideoPlayer {
     }
   }
 
-  private void setUpVideoPlayer(ExoPlayer exoPlayer, QueuingEventSink eventSink) {
+  private void setUpVideoPlayer(
+      ExoPlayer exoPlayer,
+      QueuingEventSink eventSink,
+      @Nullable Messages.MessageLivePhotoType livePhotoType) {
     this.exoPlayer = exoPlayer;
     this.eventSink = eventSink;
 
@@ -255,6 +263,43 @@ final class VideoPlayer {
               event.put("isPlaying", isPlaying);
               eventSink.success(event);
             }
+          }
+
+          @Override
+          public void onTracksChanged(@NonNull Tracks tracks) {
+            // google's live photos may contain a weird second track with higher
+            // resolution but only a few frames, we don't want that track
+            if (livePhotoType != Messages.MessageLivePhotoType.GOOGLE_MP &&
+                livePhotoType != Messages.MessageLivePhotoType.GOOGLE_MVIMG) {
+              return;
+            }
+            // find the 1st video track group
+            Tracks.Group vidTrackGroup = null;
+            for (Tracks.Group g : tracks.getGroups()) {
+              @C.TrackType int trackType = g.getType();
+              if (trackType == C.TRACK_TYPE_VIDEO) {
+                vidTrackGroup = g;
+                break;
+              }
+            }
+            if (vidTrackGroup == null) {
+              Log.e("VideoPlayer", "No video track group");
+              return;
+            }
+
+            if (vidTrackGroup.isSelected() && vidTrackGroup.isTrackSelected(0)) {
+              // playing the 1st track of the 1st video group, ok
+              return;
+            }
+
+            // select the 1st track
+            Log.i("VideoPlayer", "Override video track");
+            TrackSelectionParameters origin = exoPlayer.getTrackSelectionParameters();
+            TrackSelectionParameters next = origin
+                .buildUpon()
+                .setOverrideForType(new TrackSelectionOverride(vidTrackGroup.getMediaTrackGroup(), 0))
+                .build();
+            exoPlayer.setTrackSelectionParameters(next);
           }
         });
   }
