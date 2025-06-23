@@ -7,6 +7,7 @@ import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
+import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.FileDataSource
 import com.google.android.exoplayer2.upstream.TransferListener
@@ -36,10 +37,21 @@ class AppDataSourceFactory(
 			)
 		}
 
+		val baseDataSource = DefaultHttpDataSource.Factory().run {
+			setUserAgent("nc-photos")
+			setAllowCrossProtocolRedirects(true)
+			val bandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
+			setTransferListener(bandwidthMeter)
+			if (httpHeaders != null) {
+				setDefaultRequestProperties(httpHeaders!!)
+			}
+			createDataSource()
+		}
+		val dataSource = DefaultDataSource(context, baseDataSource)
 		return AppDataSource(
 			upstreamDataSrc=CacheDataSource(
 				downloadCache!!,
-				httpDataSourceFactory.createDataSource(),
+				dataSource,
 				FileDataSource(),
 				CacheDataSink(downloadCache!!, maxFileSize),
 				CacheDataSource.FLAG_BLOCK_ON_CACHE or
@@ -50,15 +62,11 @@ class AppDataSourceFactory(
 		)
 	}
 
-	val httpDataSourceFactory: DefaultHttpDataSource.Factory
-
-	init {
-		val bandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
-		httpDataSourceFactory = DefaultHttpDataSource.Factory()
-			.setUserAgent("nc-photos")
-			.setAllowCrossProtocolRedirects(true)
-			.setTransferListener(bandwidthMeter)
+	fun setHttpHeaders(value: Map<String, String>?) {
+		httpHeaders = value
 	}
+
+	private var httpHeaders: Map<String, String>? = null
 
 	companion object {
 		private var downloadCache: SimpleCache? = null

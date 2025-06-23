@@ -94,12 +94,10 @@ final class VideoPlayer {
         livePhotoType
     );
     if (!httpHeaders.isEmpty()) {
-      appDataSourceFactory.getHttpDataSourceFactory()
-          .setDefaultRequestProperties(httpHeaders);
+      appDataSourceFactory.setHttpHeaders(httpHeaders);
     }
-    DataSource.Factory dataSourceFactory = appDataSourceFactory;
 
-    MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint);
+    MediaSource mediaSource = buildMediaSource(uri, appDataSourceFactory, formatHint);
 
     exoPlayer.setMediaSource(mediaSource);
     exoPlayer.prepare();
