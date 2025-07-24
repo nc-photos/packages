@@ -49,11 +49,18 @@ class CreateMessage {
   String? packageName;
   String? formatHint;
   Map<String?, String?> httpHeaders;
+  MessageLivePhotoType? livePhotoType;
 }
 
 class MixWithOthersMessage {
   MixWithOthersMessage(this.mixWithOthers);
   bool mixWithOthers;
+}
+
+enum MessageLivePhotoType {
+  googleMvimg,
+  googleMp,
+  samsung,
 }
 
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')

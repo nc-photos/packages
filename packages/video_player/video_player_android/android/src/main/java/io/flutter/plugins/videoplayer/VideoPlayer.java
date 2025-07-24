@@ -27,6 +27,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import io.flutter.view.TextureRegistry;
 import java.util.Map;
 
+@UnstableApi
 final class VideoPlayer {
   private static final String FORMAT_SS = "ss";
   private static final String FORMAT_DASH = "dash";
@@ -45,7 +46,7 @@ final class VideoPlayer {
 
   private final VideoPlayerOptions options;
 
-  private final DefaultHttpDataSource.Factory httpDataSourceFactory;
+  private DefaultHttpDataSource.Factory httpDataSourceFactory;
 
   VideoPlayer(
       Context context,
@@ -54,7 +55,8 @@ final class VideoPlayer {
       String dataSource,
       String formatHint,
       @NonNull Map<String, String> httpHeaders,
-      VideoPlayerOptions options) {
+      VideoPlayerOptions options,
+      Messages.MessageLivePhotoType livePhotoType) {
     this.videoPlayerEvents = events;
     this.textureEntry = textureEntry;
     this.options = options;
@@ -65,15 +67,22 @@ final class VideoPlayer {
             .setMimeType(mimeFromFormatHint(formatHint))
             .build();
 
-    httpDataSourceFactory = new DefaultHttpDataSource.Factory();
-    configureHttpDataSourceFactory(httpHeaders);
+    AppDataSourceFactory appDataSourceFactory = new AppDataSourceFactory(
+        context,
+        512 * 1024 * 1024, // 512MB
+        10 * 1024 * 1024, // 10MB
+        livePhotoType
+    );
+    if (!httpHeaders.isEmpty()) {
+      appDataSourceFactory.setHttpHeaders(httpHeaders);
+    }
 
-    ExoPlayer exoPlayer = buildExoPlayer(context, httpDataSourceFactory);
+    ExoPlayer exoPlayer = buildExoPlayer(context, appDataSourceFactory);
 
     exoPlayer.setMediaItem(mediaItem);
     exoPlayer.prepare();
 
-    setUpVideoPlayer(exoPlayer);
+    setUpVideoPlayer(exoPlayer, livePhotoType);
   }
 
   // Constructor used to directly test members of this class.
@@ -89,7 +98,7 @@ final class VideoPlayer {
     this.options = options;
     this.httpDataSourceFactory = httpDataSourceFactory;
 
-    setUpVideoPlayer(exoPlayer);
+    setUpVideoPlayer(exoPlayer, null);
   }
 
   @VisibleForTesting
@@ -104,13 +113,13 @@ final class VideoPlayer {
         httpDataSourceFactory, httpHeaders, userAgent, httpHeadersNotEmpty);
   }
 
-  private void setUpVideoPlayer(ExoPlayer exoPlayer) {
+  private void setUpVideoPlayer(ExoPlayer exoPlayer, @Nullable Messages.MessageLivePhotoType livePhotoType) {
     this.exoPlayer = exoPlayer;
 
     surface = new Surface(textureEntry.surfaceTexture());
     exoPlayer.setVideoSurface(surface);
     setAudioAttributes(exoPlayer, options.mixWithOthers);
-    exoPlayer.addListener(new ExoPlayerEventListener(exoPlayer, videoPlayerEvents));
+    exoPlayer.addListener(new ExoPlayerEventListener(exoPlayer, videoPlayerEvents, livePhotoType));
   }
 
   void sendBufferingUpdate() {

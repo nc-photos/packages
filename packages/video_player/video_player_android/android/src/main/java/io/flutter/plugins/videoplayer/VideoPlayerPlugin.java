@@ -116,7 +116,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
               "asset:///" + assetLookupKey,
               null,
               new HashMap<>(),
-              options);
+              options,
+              arg.getLivePhotoType());
     } else {
       Map<String, String> httpHeaders = arg.getHttpHeaders();
       player =
@@ -127,7 +128,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
               arg.getUri(),
               arg.getFormatHint(),
               httpHeaders,
-              options);
+              options,
+              arg.getLivePhotoType());
     }
     videoPlayers.put(handle.id(), player);
 

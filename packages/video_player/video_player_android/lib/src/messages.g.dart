@@ -11,6 +11,12 @@ import 'dart:typed_data' show Float64List, Int32List, Int64List, Uint8List;
 import 'package:flutter/foundation.dart' show ReadBuffer, WriteBuffer;
 import 'package:flutter/services.dart';
 
+enum MessageLivePhotoType {
+  googleMvimg,
+  googleMp,
+  samsung,
+}
+
 class TextureMessage {
   TextureMessage({
     required this.textureId,
@@ -143,6 +149,7 @@ class CreateMessage {
     this.packageName,
     this.formatHint,
     required this.httpHeaders,
+    this.livePhotoType,
   });
 
   String? asset;
@@ -155,6 +162,8 @@ class CreateMessage {
 
   Map<String?, String?> httpHeaders;
 
+  MessageLivePhotoType? livePhotoType;
+
   Object encode() {
     return <Object?>[
       asset,
@@ -162,6 +171,7 @@ class CreateMessage {
       packageName,
       formatHint,
       httpHeaders,
+      livePhotoType?.index,
     ];
   }
 
@@ -174,6 +184,9 @@ class CreateMessage {
       formatHint: result[3] as String?,
       httpHeaders:
           (result[4] as Map<Object?, Object?>?)!.cast<String?, String?>(),
+      livePhotoType: result[5] != null
+          ? MessageLivePhotoType.values[result[5]! as int]
+          : null,
     );
   }
 }

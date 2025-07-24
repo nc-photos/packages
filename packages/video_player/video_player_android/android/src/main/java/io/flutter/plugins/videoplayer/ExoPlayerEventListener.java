@@ -4,9 +4,15 @@
 
 package io.flutter.plugins.videoplayer;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
+import androidx.media3.common.C;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.common.TrackSelectionOverride;
+import androidx.media3.common.TrackSelectionParameters;
+import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
 
@@ -15,10 +21,16 @@ final class ExoPlayerEventListener implements Player.Listener {
   private final VideoPlayerCallbacks events;
   private boolean isBuffering = false;
   private boolean isInitialized = false;
+  private final Messages.MessageLivePhotoType livePhotoType;
 
-  ExoPlayerEventListener(ExoPlayer exoPlayer, VideoPlayerCallbacks events) {
+  ExoPlayerEventListener(
+      ExoPlayer exoPlayer,
+      VideoPlayerCallbacks events,
+      Messages.MessageLivePhotoType livePhotoType
+  ) {
     this.exoPlayer = exoPlayer;
     this.events = events;
+    this.livePhotoType = livePhotoType;
   }
 
   private void setBuffering(boolean buffering) {
@@ -97,5 +109,42 @@ final class ExoPlayerEventListener implements Player.Listener {
   @Override
   public void onIsPlayingChanged(boolean isPlaying) {
     events.onIsPlayingStateUpdate(isPlaying);
+  }
+
+  @Override
+  public void onTracksChanged(@NonNull Tracks tracks) {
+    // google's live photos may contain a weird second track with higher
+    // resolution but only a few frames, we don't want that track
+    if (livePhotoType != Messages.MessageLivePhotoType.GOOGLE_MP &&
+        livePhotoType != Messages.MessageLivePhotoType.GOOGLE_MVIMG) {
+      return;
+    }
+    // find the 1st video track group
+    Tracks.Group vidTrackGroup = null;
+    for (Tracks.Group g : tracks.getGroups()) {
+      @C.TrackType int trackType = g.getType();
+      if (trackType == C.TRACK_TYPE_VIDEO) {
+        vidTrackGroup = g;
+        break;
+      }
+    }
+    if (vidTrackGroup == null) {
+      Log.e("VideoPlayer", "No video track group");
+      return;
+    }
+
+    if (vidTrackGroup.isSelected() && vidTrackGroup.isTrackSelected(0)) {
+      // playing the 1st track of the 1st video group, ok
+      return;
+    }
+
+    // select the 1st track
+    Log.i("VideoPlayer", "Override video track");
+    TrackSelectionParameters origin = exoPlayer.getTrackSelectionParameters();
+    TrackSelectionParameters next = origin
+        .buildUpon()
+        .setOverrideForType(new TrackSelectionOverride(vidTrackGroup.getMediaTrackGroup(), 0))
+        .build();
+    exoPlayer.setTrackSelectionParameters(next);
   }
 }

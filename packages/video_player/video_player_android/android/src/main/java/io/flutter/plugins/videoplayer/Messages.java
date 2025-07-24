@@ -16,6 +16,10 @@ import io.flutter.plugin.common.StandardMessageCodec;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Generated class from Pigeon. */
@@ -53,6 +57,18 @@ public class Messages {
           "Cause: " + exception.getCause() + ", Stacktrace: " + Log.getStackTraceString(exception));
     }
     return errorList;
+  }
+
+  public enum MessageLivePhotoType {
+    GOOGLE_MVIMG(0),
+    GOOGLE_MP(1),
+    SAMSUNG(2);
+
+    final int index;
+
+    private MessageLivePhotoType(final int index) {
+      this.index = index;
+    }
   }
 
   /** Generated class from Pigeon that represents data sent in messages. */
@@ -469,6 +485,16 @@ public class Messages {
       this.httpHeaders = setterArg;
     }
 
+    private @Nullable MessageLivePhotoType livePhotoType;
+
+    public @Nullable MessageLivePhotoType getLivePhotoType() {
+      return livePhotoType;
+    }
+
+    public void setLivePhotoType(@Nullable MessageLivePhotoType setterArg) {
+      this.livePhotoType = setterArg;
+    }
+
     /** Constructor is non-public to enforce null safety; use Builder. */
     CreateMessage() {}
 
@@ -509,6 +535,13 @@ public class Messages {
         return this;
       }
 
+      private @Nullable MessageLivePhotoType livePhotoType;
+
+      public @NonNull Builder setLivePhotoType(@Nullable MessageLivePhotoType setterArg) {
+        this.livePhotoType = setterArg;
+        return this;
+      }
+
       public @NonNull CreateMessage build() {
         CreateMessage pigeonReturn = new CreateMessage();
         pigeonReturn.setAsset(asset);
@@ -516,18 +549,20 @@ public class Messages {
         pigeonReturn.setPackageName(packageName);
         pigeonReturn.setFormatHint(formatHint);
         pigeonReturn.setHttpHeaders(httpHeaders);
+        pigeonReturn.setLivePhotoType(livePhotoType);
         return pigeonReturn;
       }
     }
 
     @NonNull
     ArrayList<Object> toList() {
-      ArrayList<Object> toListResult = new ArrayList<Object>(5);
+      ArrayList<Object> toListResult = new ArrayList<Object>(6);
       toListResult.add(asset);
       toListResult.add(uri);
       toListResult.add(packageName);
       toListResult.add(formatHint);
       toListResult.add(httpHeaders);
+      toListResult.add(livePhotoType == null ? null : livePhotoType.index);
       return toListResult;
     }
 
@@ -543,6 +578,8 @@ public class Messages {
       pigeonResult.setFormatHint((String) formatHint);
       Object httpHeaders = list.get(4);
       pigeonResult.setHttpHeaders((Map<String, String>) httpHeaders);
+      Object livePhotoType = list.get(5);
+      pigeonResult.setLivePhotoType(livePhotoType == null ? null : MessageLivePhotoType.values()[(int) livePhotoType]);
       return pigeonResult;
     }
   }
